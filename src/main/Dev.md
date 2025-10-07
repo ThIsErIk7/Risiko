@@ -4,7 +4,7 @@
 
 ---
 
-### **Woche 1 – Planung & Setup**
+### **Woche 1 – Planung & Setup** ✅
 
 **Ziel:** Struktur, Organisation, Git-Setup und Projektgrundlage schaffen.
 
