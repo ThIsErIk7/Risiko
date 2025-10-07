@@ -1,70 +1,155 @@
 
----
 
-# **Risiko light – 10-Wochen-Plan mit Tagesaufgaben**
-
-| Woche | Tag | Deine Aufgaben                                         | Freunds Aufgaben                                      | Deliverables / Ergebnis           |
-| ----- | --- | ------------------------------------------------------ | ----------------------------------------------------- | --------------------------------- |
-| 1     | Mo  | Projektordner & Packages anlegen, Git-Repo klonen      | Projektstruktur prüfen, Map/JSON Struktur grob planen | Git-Repo + Projektstruktur bereit |
-| 1     | Di  | Klassendiagramme für `Game`, `Player`, `Territory`     | Map-Knoten / Nachbarschaften designen                 | Klassendiagramme fertig           |
-| 1     | Mi  | Rollen & Aufgaben für die nächsten Wochen festlegen    | Gleiche Aufgabe, Abstimmung                           | Aufgabenverteilung klar           |
-| 1     | Do  | Git-Branch-Strategie festlegen (`main`, `feature/...`) | Pull-Request-Workflow festlegen                       | Branch-Strategie dokumentiert     |
-| 1     | Fr  | README-Update mit Projektziel & ALN-Dokumentation      | Gleiche Aufgabe, Inhalt prüfen                        | README final für Woche 1          |
-
-| 2 | Mo | `Player` Klasse erstellen, Name, Farbe, Armeen | `Territory` Klasse erstellen, Name, Nachbarn | Konsolen-Test: Spieler und Territorien erstellt |
-| 2 | Di | `GameState` erstellen, Spieler initialisieren | Map-Struktur initialisieren | Spielstatus initialisiert |
-| 2 | Mi | `Phase` & `Game` Grundstruktur implementieren | Unit-Test-Karte, Nachbarschaften prüfen | Grundlegende Logik läuft in Konsolenmodus |
-| 2 | Do | Methoden zum Armeen verteilen implementieren | Konsolen-Ausgabe für Verteilung | Test: Armeen korrekt verteilt |
-| 2 | Fr | Konsolen-Simulation einer Runde testen | Fehler prüfen und abstimmen | Konsolen-Simulation erfolgreich |
-
-| 3 | Mo | `MapLoader` erstellen, JSON einlesen | Testkarten erstellen | Karten laden funktioniert |
-| 3 | Di | MapLoader an GameState anbinden | Map-Ausgabe prüfen | Spielerstart korrekt |
-| 3 | Mi | Start-Armeen verteilen implementieren | Testfälle erstellen | Start-Armeen korrekt |
-| 3 | Do | Validierung: Nachbarschaften korrekt? | Ausgabe überprüfen | Map-Integrität geprüft |
-| 3 | Fr | Konsolen-Test: alle Gebiete + Spieler initialisiert | Testlauf durchführen | Funktionierende Basiskarte |
-
-| 4 | Mo | Verstärkungslogik implementieren | Konsolenanzeige vorbereiten | Verstärkungsphase funktioniert |
-| 4 | Di | Limitierung pro Spieler prüfen | Testfälle ausführen | Verstärkung korrekt verteilt |
-| 4 | Mi | Konsolen-Test Runde 1 | Ausgabe prüfen | Test erfolgreich |
-| 4 | Do | Code aufräumen & dokumentieren | Gleiche Aufgabe | Sauberer Code |
-| 4 | Fr | Testlauf: alle Spieler & Gebiete | Testlauf durchführen | Stabilität überprüft |
-
-| 5 | Mo | `CombatResolver` erstellen, Würfellogik implementieren | Konsolen-Testfälle für Angriffe | Angriff berechnet korrekt |
-| 5 | Di | Gebiet übernehmen bei Verlust implementieren | Angriffe prüfen | Gebietsübernahme korrekt |
-| 5 | Mi | Konsolen-Test für mehrere Angriffe | Log-Ausgabe prüfen | Angriffe korrekt |
-| 5 | Do | Edge-Cases prüfen (max Würfel, leere Gebiete) | Testfälle erstellen | Stabilität geprüft |
-| 5 | Fr | Dokumentation Kampfphase | Gleiche Aufgabe | Logik dokumentiert |
-
-| 6 | Mo | Bewegungsphase implementieren | Konsolen-Statusanzeige implementieren | Bewegungen korrekt |
-| 6 | Di | Connected Graph prüfen, limit prüfen | Konsolen-Test | Alle Bewegungen korrekt |
-| 6 | Mi | Rundenwechsel implementieren | Ausgabe prüfen | Spielerwechsel korrekt |
-| 6 | Do | Voller Konsolen-Test Runde | Testlauf durchführen | Alle Phasen laufen |
-| 6 | Fr | Bugfixes und Code-Refactor | Testlauf | Stabilität geprüft |
-
-| 7 | Mo | Siegbedingungen implementieren | Testfälle erstellen | Sieg korrekt erkannt |
-| 7 | Di | Konsolen-Test: Spielende | Ausgabe prüfen | Spielende korrekt |
-| 7 | Mi | Mehrere Runden simulieren | Fehler prüfen | Funktionierendes Spiel |
-| 7 | Do | Edge-Cases prüfen | Konsolen-Check | Alle Regeln abgedeckt |
-| 7 | Fr | Code aufräumen & dokumentieren | Gleiche Aufgabe | Stabiler Code |
-
-| 8 | Mo | Unit-Tests für alle Kernklassen | Gleiche Aufgabe | Testabdeckung vorhanden |
-| 8 | Di | Test: Verstärkung + Angriff + Bewegung | Test durchführen | Alle Phasen getestet |
-| 8 | Mi | Bugfixing & Refactoring | GUI-Struktur planen | Stabilität + GUI-Plan |
-| 8 | Do | GUI-Package + Klassen vorbereiten | Platzhalter-View-Klassen erstellen | GUI-Struktur bereit |
-| 8 | Fr | Code Review & Dokumentation | Gleiche Aufgabe | Projekt sauber dokumentiert |
-
-| 9 | Mo | Bindung Model → View, Methoden bereitstellen | GUI-Hauptfenster & MapView erstellen | Grund-GUI fertig |
-| 9 | Di | Button-Events implementieren | Karte visualisieren | Buttons triggern Methoden |
-| 9 | Mi | Statusanzeige & LogPanel | Log-Textfeld implementieren | Anzeige korrekt |
-| 9 | Do | Konsolen-Backend testen über GUI | Gleiche Aufgabe | GUI + Model integriert |
-| 9 | Fr | Animation vorbereiten (optional) | Test der MapView | Animation placeholders |
-
-| 10 | Mo | Speicher-/Ladefunktion implementieren | GUI finalisieren | Spielstand speichern/laden |
-| 10 | Di | End-to-End Test aller Funktionen | Animation & Styling finalisieren | Voll funktionsfähiges GUI-Spiel |
-| 10 | Mi | Bugfixing & Optimierung | Gleiche Aufgabe | Stabilität garantiert |
-| 10 | Do | Dokumentation finalisieren | Gleiche Aufgabe | PDF + README fertig |
-| 10 | Fr | Präsentation vorbereiten & Abschluss | Gleiche Aufgabe | Projekt vollständig abgabefertig |
+## 🧭 **Gesamtprojektplan – „Risiko light“**
 
 ---
+
+### **Woche 1 – Planung & Setup**
+
+**Ziel:** Struktur, Organisation, Git-Setup und Projektgrundlage schaffen.
+
+| Tag            | Aufgaben                                                                                                                                                 |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Montag**     | Projektordner erstellen, Packages anlegen (`model`, `view`, `controller`, `util`), Git-Repo klonen und `.gitignore` hinzufügen.                          |
+| **Dienstag**   | Klassendiagramme und erste Architekturentwürfe (MVC). Besprechung: Welche Klassen und Datenmodelle werden benötigt (`Player`, `Territory`, `Game` etc.). |
+| **Mittwoch**   | Aufgabenverteilung mit deinem Freund festlegen, gemeinsame Arbeitsweise über Git klären, Zeitplan (diese Tabelle) finalisieren.                          |
+| **Donnerstag** | Branch-Struktur anlegen (`main`, `dev`, `feature/*`), Git-Workflow testen (Branch, Commit, Pull Request, Merge).                                         |
+| **Freitag**    | README erweitern mit Projektbeschreibung, Zielsetzung, Anforderungen, technische Umsetzung.                                                              |
+
+---
+
+### **Woche 2 – Grundlogik & Datenmodell**
+
+**Ziel:** Fundament der Spielmechanik legen (Klassen, Spielzustand, Beziehungen).
+
+| Tag            | Aufgaben                                                                      |
+| -------------- | ----------------------------------------------------------------------------- |
+| **Montag**     | Klasse `Player`: Name, Farbe, Armeen, Besitzliste.                            |
+| **Dienstag**   | Klasse `Territory`: ID, Name, Nachbarn, Besitzer, Armeen.                     |
+| **Mittwoch**   | Klasse `GameState`: enthält Spieler, Gebiete, Phase, Methoden für Spielstart. |
+| **Donnerstag** | Klasse `Phase` (Enum) + `Game` (zentrale Spielsteuerung) erstellen.           |
+| **Freitag**    | Erste Tests über die Konsole: Spieler, Gebiete, Start-Armeen.                 |
+
+---
+
+### **Woche 3 – Kartenlogik & Initialisierung**
+
+**Ziel:** Spielkarte laden und initialisieren.
+
+| Tag            | Aufgaben                                                                            |
+| -------------- | ----------------------------------------------------------------------------------- |
+| **Montag**     | `MapLoader` implementieren, JSON-Karten laden und in `Territory`-Objekte umwandeln. |
+| **Dienstag**   | Testkarte (`defaultMap.json`) mit 4–6 Gebieten erstellen.                           |
+| **Mittwoch**   | Karte in `GameState` einbinden, Spielstart mit 2 Spielern ermöglichen.              |
+| **Donnerstag** | Validierung: Nachbarschaften und Gebietsverbindungen prüfen.                        |
+| **Freitag**    | Konsolentest: Karte, Spieler und Armeen initialisiert.                              |
+
+---
+
+### **Woche 4 – Verstärkungsphase**
+
+**Ziel:** Armeen erhalten und platzieren können.
+
+| Tag            | Aufgaben                                                          |
+| -------------- | ----------------------------------------------------------------- |
+| **Montag**     | Verstärkungslogik in `Game` integrieren (Armeen = Gebiete/3).     |
+| **Dienstag**   | Methode `addArmies(Territory t, int count)` implementieren.       |
+| **Mittwoch**   | Verstärkungsphase über Konsole testbar machen.                    |
+| **Donnerstag** | Limitierung der Platzierung prüfen (keine negativen Armeen etc.). |
+| **Freitag**    | Code aufräumen, Zwischenstand committen, Konsolentest.            |
+
+---
+
+### **Woche 5 – Angriffsphase & Würfelsystem**
+
+**Ziel:** Kämpfe zwischen Gebieten ermöglichen.
+
+| Tag            | Aufgaben                                                   |
+| -------------- | ---------------------------------------------------------- |
+| **Montag**     | Klasse `CombatResolver`: Angriff, Würfel, Vergleichslogik. |
+| **Dienstag**   | Angriffsmethode in `Game` integrieren.                     |
+| **Mittwoch**   | Armeenverlust und Gebietsübernahme implementieren.         |
+| **Donnerstag** | Testfälle: 1v1, 3v2, Gleichstand etc.                      |
+| **Freitag**    | Konsolen-Testspiele mit Angriffen durchführen.             |
+
+---
+
+### **Woche 6 – Bewegungsphase & Rundenwechsel**
+
+**Ziel:** Spieler können Armeen verschieben, Runden enden korrekt.
+
+| Tag            | Aufgaben                                                  |
+| -------------- | --------------------------------------------------------- |
+| **Montag**     | Bewegung zwischen zwei eigenen Gebieten implementieren.   |
+| **Dienstag**   | Erreichbarkeit prüfen (Pfad über eigene Gebiete).         |
+| **Mittwoch**   | Rundenwechsel und Spielerrotation umsetzen.               |
+| **Donnerstag** | Phasensteuerung testen: Verstärkung → Angriff → Bewegung. |
+| **Freitag**    | Voller Testlauf einer Spielrunde.                         |
+
+---
+
+### **Woche 7 – Siegbedingungen & Spielende**
+
+**Ziel:** Gewinnerkennung und Spielende korrekt umsetzen.
+
+| Tag            | Aufgaben                                         |
+| -------------- | ------------------------------------------------ |
+| **Montag**     | Siegprüfung: alle Gebiete gehören einem Spieler. |
+| **Dienstag**   | Niederlageprüfung: keine Armeen mehr.            |
+| **Mittwoch**   | Anzeige im Konsolenmodus, wer gewonnen hat.      |
+| **Donnerstag** | Komplettspiel testen (mehrere Runden).           |
+| **Freitag**    | Code-Review & Refactoring.                       |
+
+---
+
+### **Woche 8 – Tests & Stabilisierung**
+
+**Ziel:** Alles testen, dokumentieren, vorbereiten für GUI-Integration.
+
+| Tag            | Aufgaben                                                        |
+| -------------- | --------------------------------------------------------------- |
+| **Montag**     | Unit-Tests für `Game`, `Player`, `Territory`, `CombatResolver`. |
+| **Dienstag**   | Fehleranalyse & Bugfixing.                                      |
+| **Mittwoch**   | Methoden und Klassen kommentieren (Javadoc).                    |
+| **Donnerstag** | GUI-Design planen (Mockups oder Wireframe).                     |
+| **Freitag**    | GUI-Struktur vorbereiten (`GameView`, `ControlPanel`).          |
+
+---
+
+### **Woche 9 – GUI mit JavaFX**
+
+**Ziel:** Visuelle Darstellung der Karte und Spielsteuerung.
+
+| Tag            | Aufgaben                                                    |
+| -------------- | ----------------------------------------------------------- |
+| **Montag**     | JavaFX-Fenster erstellen (`Main.java`, `Stage`, `Scene`).   |
+| **Dienstag**   | `MapView` erstellen – Gebiete zeichnen (Kreise/Farben).     |
+| **Mittwoch**   | `ControlPanel` mit Buttons: „Angreifen“, „Bewegen“, „Ende“. |
+| **Donnerstag** | Klick-Events implementieren, Verbindung zu `Game`.          |
+| **Freitag**    | Konsolenlogik über GUI bedienbar machen.                    |
+
+---
+
+### **Woche 10 – Feinschliff, Dokumentation & Präsentation**
+
+**Ziel:** Fertigstellung, Dokumentation und Vorbereitung der Präsentation.
+
+| Tag            | Aufgaben                                           |
+| -------------- | -------------------------------------------------- |
+| **Montag**     | Speicher- und Ladefunktion (JSON) implementieren.  |
+| **Dienstag**   | GUI finalisieren (Farben, Layout, Style.css).      |
+| **Mittwoch**   | End-to-End-Test: gesamte Spiellogik über GUI.      |
+| **Donnerstag** | Projektdokumentation & README finalisieren.        |
+| **Freitag**    | Präsentation vorbereiten, Testlauf, finale Abgabe. |
+
+---
+
+### 🔧 **Optionale Erweiterungen (wenn Zeit bleibt)**
+
+* **KI-Gegner:** automatisierte Verstärkung & Angriffe
+* **Online-Spiel:** Verbindung über Sockets
+* **Kontinent-Boni:** Gebiete gruppieren und Bonusarmeen vergeben
+* **Würfelanimationen:** einfache JavaFX-Animation bei Angriffen
+* **Soundeffekte:** Würfeln, Sieg, Verlust etc.
 
 
