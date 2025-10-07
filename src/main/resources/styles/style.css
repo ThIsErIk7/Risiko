@@ -1,0 +1,14 @@
+.root {
+    -fx-font-family: "Segoe UI";
+    -fx-background-color: #2a2a2a;
+}
+
+.button {
+    -fx-background-color: #3a3a3a;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.label {
+    -fx-text-fill: white;
+}
