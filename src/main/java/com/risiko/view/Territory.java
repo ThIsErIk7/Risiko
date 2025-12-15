@@ -13,7 +13,6 @@ import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Shape;
-import javafx.scene.shape.StrokeType;
 
 public class Territory extends Group {
 
@@ -30,24 +29,12 @@ public class Territory extends Group {
     private double badgeOffsetY = 0;
 
     private final Set<Territory> neighbors = new HashSet<>();
-    private boolean highlighted = false;
 
-    // Hover state
+    private boolean highlighted = false;
     private boolean hovered = false;
 
     private Consumer<Territory> onSelected;
 
-    // Stroke defaults
-    private static final double STROKE_NORMAL = 2.0;
-    private static final double STROKE_HOVER = 4.0;
-
-    public Territory(String name, Shape area, Player owner, int armyCount) {
-        this(name, area, owner, armyCount,
-                area.getBoundsInParent().getCenterX(),
-                area.getBoundsInParent().getCenterY());
-    }
-
-    // Badge-Anchor (in Parent-Koordinaten)
     public Territory(String name, Shape area, Player owner, int armyCount, double badgeX, double badgeY) {
         this.name = name;
         this.area = area;
@@ -56,11 +43,9 @@ public class Territory extends Group {
         this.badgeX = badgeX;
         this.badgeY = badgeY;
 
+        // Grund-Stroke (Grenze)
         area.setStroke(Color.color(0, 0, 0, 0.65));
-        area.setStrokeWidth(STROKE_NORMAL);
-
-        // ✅ wichtig: Stroke liegt außerhalb, damit Nachbar-Staaten ihn nicht "wegdecken"
-        area.setStrokeType(StrokeType.OUTSIDE);
+        area.setStrokeWidth(2.0);
 
         armyLabel = new Label(String.valueOf(armyCount));
         armyLabel.setStyle(
@@ -70,54 +55,28 @@ public class Territory extends Group {
                 "-fx-padding: 2 6 2 6; " +
                 "-fx-background-radius: 10;"
         );
-
-        // Label soll Klicks nicht blocken
         armyLabel.setMouseTransparent(true);
 
         updateFill();
         updateHighlight();
-        updateStroke();
+        updateHover();
 
         getChildren().addAll(area, armyLabel);
 
-        // nach CSS/Layout korrekt positionieren
+        // Badge-Position nach Layout
         Platform.runLater(this::repositionBadge);
 
-        setOnMouseClicked(e -> {
+        // Hover
+        area.setOnMouseEntered(e -> setHovered(true));
+        area.setOnMouseExited(e -> setHovered(false));
+
+        // Klick
+        area.setOnMouseClicked(e -> {
             if (onSelected != null) onSelected.accept(this);
         });
     }
 
-    // ===================== HOVER =====================
-    public void setHovered(boolean hovered) {
-        this.hovered = hovered;
-
-        if (hovered) {
-            // ✅ Hover-Linie soll IMMER über angrenzenden Staaten sichtbar sein
-            this.toFront();
-            armyLabel.toFront();
-        }
-
-        updateStroke();
-    }
-
-    public boolean isHovered() {
-        return hovered;
-    }
-
-    private void updateStroke() {
-        // Highlight hat Priorität über Hover
-        if (highlighted) {
-            area.setStrokeWidth(STROKE_HOVER);
-            area.setStroke(Color.GOLD);
-            return;
-        }
-
-        area.setStroke(Color.color(0, 0, 0, 0.65));
-        area.setStrokeWidth(hovered ? STROKE_HOVER : STROKE_NORMAL);
-    }
-
-    // ===================== BADGE =====================
+    // ===== Badge =====
     public void setBadgeOffset(double dx, double dy) {
         this.badgeOffsetX = dx;
         this.badgeOffsetY = dy;
@@ -140,10 +99,11 @@ public class Territory extends Group {
         armyLabel.setLayoutX(x);
         armyLabel.setLayoutY(y);
 
+        // Badge immer ganz vorne
         armyLabel.toFront();
     }
 
-    // ===================== NEIGHBORS =====================
+    // ===== Nachbarschaft =====
     public void addNeighbor(Territory other) {
         if (other == null || other == this) return;
         neighbors.add(other);
@@ -153,11 +113,10 @@ public class Territory extends Group {
         return other != null && neighbors.contains(other);
     }
 
-    // ===================== HIGHLIGHT =====================
+    // ===== Highlight =====
     public void setHighlighted(boolean highlighted) {
         this.highlighted = highlighted;
         updateHighlight();
-        updateStroke();
     }
 
     public boolean isHighlighted() {
@@ -168,7 +127,25 @@ public class Territory extends Group {
         setEffect(highlighted ? new DropShadow(20, Color.GOLD) : null);
     }
 
-    // ===================== OWNERSHIP =====================
+    // ===== Hover =====
+    public void setHovered(boolean hovered) {
+        this.hovered = hovered;
+        updateHover();
+    }
+
+    private void updateHover() {
+        // Nur Stroke ändern, damit nicht "Grenzen kämpfen"
+        if (hovered) {
+            area.setStroke(Color.BLACK);
+            area.setStrokeWidth(3.2);
+        } else {
+            area.setStroke(Color.color(0, 0, 0, 0.65));
+            area.setStrokeWidth(2.0);
+        }
+        armyLabel.toFront();
+    }
+
+    // ===== Ownership / UI =====
     private void updateFill() {
         if (owner == Player.BLUE) area.setFill(Color.LIGHTBLUE);
         else if (owner == Player.RED) area.setFill(Color.SALMON);

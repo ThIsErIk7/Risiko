@@ -4,30 +4,43 @@ import java.util.Random;
 
 public final class BattleSimulator {
 
+    private static final Random RNG = new Random();
+
     private BattleSimulator() {}
 
-    private static final Random RNG = new Random();
+    public static final class BattleResult {
+        public final int attackerRemaining;
+        public final int defenderRemaining;
+        public final boolean attackerWon;
+
+        public BattleResult(int a, int d) {
+            this.attackerRemaining = a;
+            this.defenderRemaining = d;
+            this.attackerWon = (d == 0);
+        }
+    }
 
     private static int roll() {
         return RNG.nextInt(6) + 1;
     }
 
-    public static double calculateWinProbability(int attacker, int defender) {
-        if (attacker <= 1) return 0.0;
-        if (defender <= 0) return 100.0;
+    public static double calculateWinProbability(int attackerTroops, int defenderTroops) {
+        if (attackerTroops <= 1) return 0.0;
+        if (defenderTroops <= 0) return 100.0;
 
-        int sims = 10000;
+        int simulations = 10000;
         int wins = 0;
-        for (int i = 0; i < sims; i++) {
-            BattleResult r = simulateBattleDetailed(attacker, defender);
-            if (r.defenderRemaining == 0) wins++;
+
+        for (int i = 0; i < simulations; i++) {
+            BattleResult res = simulateBattleDetailed(attackerTroops, defenderTroops);
+            if (res.attackerWon) wins++;
         }
-        return (wins * 100.0) / sims;
+        return (wins * 100.0) / simulations;
     }
 
-    public static BattleResult simulateBattleDetailed(int attacker, int defender) {
-        int a = attacker;
-        int d = defender;
+    public static BattleResult simulateBattleDetailed(int attackerTroops, int defenderTroops) {
+        int a = attackerTroops;
+        int d = defenderTroops;
 
         while (a > 1 && d > 0) {
             int aDice = Math.min(3, a - 1);
@@ -42,26 +55,17 @@ public final class BattleSimulator {
             java.util.Arrays.sort(aRolls);
             java.util.Arrays.sort(dRolls);
 
-            int comparisons = Math.min(aDice, dDice);
-            for (int i = 0; i < comparisons; i++) {
-                int aBest = aRolls[aDice - 1 - i];
-                int dBest = dRolls[dDice - 1 - i];
-                if (aBest > dBest) d--;
+            int comps = Math.min(aDice, dDice);
+            for (int i = 0; i < comps; i++) {
+                int aVal = aRolls[aRolls.length - 1 - i];
+                int dVal = dRolls[dRolls.length - 1 - i];
+
+                if (aVal > dVal) d--;
                 else a--;
                 if (a <= 1 || d <= 0) break;
             }
         }
 
         return new BattleResult(a, d);
-    }
-
-    public static final class BattleResult {
-        public final int attackerRemaining;
-        public final int defenderRemaining;
-
-        public BattleResult(int attackerRemaining, int defenderRemaining) {
-            this.attackerRemaining = attackerRemaining;
-            this.defenderRemaining = defenderRemaining;
-        }
     }
 }

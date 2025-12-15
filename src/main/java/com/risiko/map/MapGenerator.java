@@ -25,7 +25,7 @@ public class MapGenerator {
     public List<Territory> generate(Pane mapPane) {
         List<Territory> territories = new ArrayList<>();
 
-        // ===================== INSEL 1 =====================
+        // INSEL 1
         Territory a = createState("A", I1_X, I1_Y, new int[][]{
                 {0,1},{0,2},{0,3},
                 {1,0},{1,1},{1,2},{1,3}
@@ -55,7 +55,7 @@ public class MapGenerator {
         link(a,b); link(b,c); link(b,d); link(a,d); link(d,e); link(c,e);
         territories.addAll(List.of(a,b,c,d,e));
 
-        // ===================== INSEL 2 =====================
+        // INSEL 2
         Territory f = createState("F", I2_X, I2_Y, new int[][]{
                 {1,0},{2,0},{3,0},
                 {1,1},{2,1}
@@ -89,7 +89,7 @@ public class MapGenerator {
 
         territories.addAll(List.of(f,g,h,i,j));
 
-        // ===================== INSEL 3 =====================
+        // INSEL 3
         Territory k = createState("K", I3_X, I3_Y, new int[][]{
                 {0,1},{0,2},{0,3},
                 {1,1},{1,2}
@@ -122,9 +122,6 @@ public class MapGenerator {
         link(k,o);
 
         territories.addAll(List.of(k,l,m,n,o));
-
-        // Badge-Feinschliff (optional)
-        o.setBadgeOffset(0, 12);
 
         mapPane.getChildren().addAll(territories);
         return territories;
@@ -159,14 +156,14 @@ public class MapGenerator {
         double badgeX = sumX / hexCoords.length;
         double badgeY = sumY / hexCoords.length;
 
-        // 🔥 WICHTIG: NONE + 0 Armeen
+        // Start: NONE + 0 Armeen
         return new Territory(name, area, Player.NONE, 0, badgeX, badgeY);
     }
 
     private Polygon createHex(double cx, double cy) {
         Polygon p = new Polygon();
-        for (int i = 0; i < 6; i++) {
-            double angleDeg = 60 * i - 30;
+        for (int ii = 0; ii < 6; ii++) {
+            double angleDeg = 60 * ii - 30;
             double angleRad = Math.toRadians(angleDeg);
             double x = cx + HEX_SIZE * Math.cos(angleRad);
             double y = cy + HEX_SIZE * Math.sin(angleRad);
@@ -179,8 +176,8 @@ public class MapGenerator {
 
     private Shape unionAll(List<Shape> shapes) {
         Shape out = shapes.get(0);
-        for (int i = 1; i < shapes.size(); i++) {
-            out = Shape.union(out, shapes.get(i));
+        for (int ii = 1; ii < shapes.size(); ii++) {
+            out = Shape.union(out, shapes.get(ii));
         }
         return out;
     }
