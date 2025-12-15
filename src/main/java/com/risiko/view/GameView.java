@@ -1,17 +1,17 @@
 package com.risiko.view;
 
-import javafx.scene.layout.Pane;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.shape.Circle;
-import javafx.scene.text.Text;
-import javafx.scene.text.Font;
-
+import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.List;
+
+import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 // no Map import needed
 
 public class GameView extends Pane {
