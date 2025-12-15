@@ -124,6 +124,13 @@ public class MapGenerator {
         territories.addAll(List.of(k,l,m,n,o));
 
         mapPane.getChildren().addAll(territories);
+
+        // FIX: Insel I überlappt andere States → Badge sonst verdeckt
+        // Z-Reihenfolge explizit nach vorne ziehen
+        if (i != null) {
+            i.toFront();
+        }
+
         return territories;
     }
 

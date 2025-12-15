@@ -32,6 +32,10 @@ public class GameController {
     // Wir zählen eine Runde immer dann hoch, wenn nach `endTurn()` wieder RED dran ist.
     private int roundsPlayed = 0;
 
+    // ===== Game Over =====
+    private Player winner = Player.NONE;
+    private String winnerReason = "";
+
     public GameController(GameState state) {
         this.state = state;
 
@@ -47,6 +51,7 @@ public class GameController {
 
     public void setTerritories(List<Territory> territories) {
         this.territories = (territories == null) ? new ArrayList<>() : territories;
+        updateWinnerIfNeeded();
     }
 
     public List<Territory> getTerritories() {
@@ -153,6 +158,8 @@ public class GameController {
             if (me == Player.BLUE) setupRemainingBlue -= amount;
         }
 
+        updateWinnerIfNeeded();
+
         return "Platziert: +" + amount + " auf " + target.getName() + ". Bank: " + state.getBank(me);
     }
 
@@ -242,6 +249,8 @@ public class GameController {
             defender.setOwner(me);
             defender.setArmyCount(move);
 
+            updateWinnerIfNeeded();
+
             return "Gewonnen! " + defender.getName()
                     + " erobert. Verlust: -" + atkLoss
                     + ", Transfer: " + move
@@ -257,6 +266,8 @@ public class GameController {
             defAfter = Math.max(1, defAfter);
             defender.setArmyCount(defAfter);
 
+            updateWinnerIfNeeded();
+
             return "Verloren. Angreifer -1, Verteidiger -" + defLoss
                     + " (Chance: " + String.format("%.1f", chance) + "% )";
         }
@@ -267,17 +278,25 @@ public class GameController {
     public String endTurn() {
         Player me = state.getCurrentPlayer();
 
+        if (isGameOver()) {
+            return "Spiel beendet: " + getWinner() + (winnerReason.isBlank() ? "" : (" (" + winnerReason + ")"));
+        }
+
         // ===== Setup-Phase: EndTurn nur wenn 18 platziert sind =====
         if (setupPhase) {
             if (getSetupRemaining(me) > 0) {
                 return "Du musst erst alle 18 Starttruppen platzieren. Übrig: " + getSetupRemaining(me);
             }
 
+            updateWinnerIfNeeded();
+
             // Spieler wechseln
             placedThisTurn = 0;
             selectedTerritory = null;
             clearHighlights();
             state.nextPlayer();
+
+            updateWinnerIfNeeded();
 
             // Wenn auch der zweite Spieler fertig ist -> Setup endet, Income starten
             if (setupRemainingRed == 0 && setupRemainingBlue == 0) {
@@ -289,6 +308,8 @@ public class GameController {
                 // Einkommen gibt es erst beim nächsten regulären Rundenwechsel.
                 state.setSaveStreak(Player.RED, 0);
                 state.setSaveStreak(Player.BLUE, 0);
+
+                updateWinnerIfNeeded();
 
                 return "Startphase abgeschlossen! Neuer Spieler: " + state.getCurrentPlayer()
                         + " | Bank: " + state.getBank(state.getCurrentPlayer())
@@ -321,6 +342,8 @@ public class GameController {
 
         grantIncomeFor(state.getCurrentPlayer());
 
+        updateWinnerIfNeeded();
+
         Player now = state.getCurrentPlayer();
         return "Zug beendet. Neuer Spieler: " + now + " | Bank: " + state.getBank(now);
     }
@@ -346,5 +369,96 @@ public class GameController {
         }
 
         state.addToBank(p, income);
+    }
+
+    // ===================== Game Over =====================
+
+    public boolean isGameOver() {
+        updateWinnerIfNeeded();
+        return winner != Player.NONE;
+    }
+
+    public Player getWinner() {
+        updateWinnerIfNeeded();
+        return winner;
+    }
+
+    public String getWinnerReason() {
+        updateWinnerIfNeeded();
+        return winnerReason;
+    }
+
+    /**
+     * Win condition:
+     * - A player has 0 territories
+     * - or a player owns all territories
+     */
+    private void updateWinnerIfNeeded() {
+        if (setupPhase) {
+            // Während Setup noch kein Game Over
+            winner = Player.NONE;
+            winnerReason = "";
+            return;
+        }
+
+        if (territories == null || territories.isEmpty()) {
+            winner = Player.NONE;
+            winnerReason = "";
+            return;
+        }
+
+        int red = 0;
+        int blue = 0;
+        int total = 0;
+
+        for (Territory t : territories) {
+            if (t == null) continue;
+            Player o = t.getOwner();
+            if (o == Player.NONE) continue; // unclaimed zählt nicht
+            total++;
+            if (o == Player.RED) red++;
+            else if (o == Player.BLUE) blue++;
+        }
+
+        // Wenn es noch unclaimed gibt (total < territories.size()), kann trotzdem jemand 0 Felder haben.
+        if (red == 0 && blue > 0) {
+            winner = Player.BLUE;
+            winnerReason = "Rot hat keine Staaten mehr";
+            return;
+        }
+        if (blue == 0 && red > 0) {
+            winner = Player.RED;
+            winnerReason = "Blau hat keine Staaten mehr";
+            return;
+        }
+
+        // Alle geclaimten gehören einem Spieler UND es gibt mindestens 1 geclaimtes Feld.
+        if (total > 0 && red == total && blue == 0) {
+            winner = Player.RED;
+            winnerReason = "Alle Staaten gehören Rot";
+            return;
+        }
+        if (total > 0 && blue == total && red == 0) {
+            winner = Player.BLUE;
+            winnerReason = "Alle Staaten gehören Blau";
+            return;
+        }
+
+        // Wenn ALLE Territorien geclaimt sind, ist es eindeutiger: einer besitzt wirklich alle.
+        if (total == territories.size()) {
+            if (red == total) {
+                winner = Player.RED;
+                winnerReason = "Alle Staaten gehören Rot";
+                return;
+            }
+            if (blue == total) {
+                winner = Player.BLUE;
+                winnerReason = "Alle Staaten gehören Blau";
+                return;
+            }
+        }
+
+        winner = Player.NONE;
+        winnerReason = "";
     }
 }

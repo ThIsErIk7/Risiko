@@ -17,6 +17,7 @@ import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Spinner;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
@@ -33,13 +34,77 @@ public class Main extends Application {
 
     private GameController controller;
 
+    private String redName;
+    private String blueName;
+
     private final Label currentPlayerLabel = new Label();
     private final Label bankLabel = new Label();
     private final Label selectedFieldLabel = new Label("Ausgewähltes Feld:\n–");
     private final Label infoLabel = new Label("");
 
+    private Button endTurnBtn;
+    private boolean gameOver = false;
+
     @Override
     public void start(Stage stage) {
+        showStartScreen(stage);
+        stage.show();
+    }
+
+    private void showStartScreen(Stage stage) {
+        VBox root = new VBox(16);
+        root.setAlignment(Pos.CENTER);
+        root.setPadding(new Insets(40));
+        root.setBackground(new Background(
+                new BackgroundFill(Color.web("#111"), CornerRadii.EMPTY, Insets.EMPTY)
+        ));
+
+        Label title = new Label("RISIKO");
+        title.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: white;");
+
+        TextField redField = new TextField("Rot");
+        redField.setMaxWidth(240);
+        redField.setStyle("-fx-font-size: 14px;");
+
+        TextField blueField = new TextField("Blau");
+        blueField.setMaxWidth(240);
+        blueField.setStyle("-fx-font-size: 14px;");
+
+        redField.setPromptText("Name Spieler Rot");
+        blueField.setPromptText("Name Spieler Blau");
+
+        Button startBtn = new Button("Spiel starten");
+        startBtn.setPrefWidth(240);
+
+        startBtn.setOnAction(e -> {
+            String redName = redField.getText().isBlank() ? "Rot" : redField.getText();
+            String blueName = blueField.getText().isBlank() ? "Blau" : blueField.getText();
+            showGame(stage, redName, blueName);
+        });
+
+        Label redLabel = new Label("Spieler Rot");
+        redLabel.setStyle("-fx-text-fill: salmon; -fx-font-weight: bold;");
+
+        Label blueLabel = new Label("Spieler Blau");
+        blueLabel.setStyle("-fx-text-fill: lightblue; -fx-font-weight: bold;");
+
+        root.getChildren().addAll(
+                title,
+                redLabel,
+                redField,
+                blueLabel,
+                blueField,
+                startBtn
+        );
+
+        Scene scene = new Scene(root, 500, 400);
+        stage.setScene(scene);
+    }
+
+    private void showGame(Stage stage, String redName, String blueName) {
+
+        this.redName = redName;
+        this.blueName = blueName;
 
         controller = new GameController(new GameState());
 
@@ -60,19 +125,17 @@ public class Main extends Application {
         bankLabel.setStyle("-fx-text-fill: #dddddd;");
         selectedFieldLabel.setStyle("-fx-text-fill: white;");
         infoLabel.setStyle("-fx-text-fill: #bbbbbb;");
+        infoLabel.setWrapText(true);
+        infoLabel.setMinHeight(80);
+        infoLabel.setPrefHeight(120);
 
-        Button addArmyBtn = new Button("+1 Armee");
-        addArmyBtn.setPrefWidth(200);
-        addArmyBtn.setOnAction(e -> {
-            infoLabel.setText(controller.addArmy());
-            refreshLabels();
-        });
-
-        Button endTurnBtn = new Button("Zug beenden");
+        endTurnBtn = new Button("Zug beenden");
         endTurnBtn.setPrefWidth(200);
         endTurnBtn.setOnAction(e -> {
+            if (gameOver) return;
             infoLabel.setText(controller.endTurn());
             refreshLabels();
+            checkGameOver(stage);
         });
 
         sidebar.getChildren().addAll(
@@ -80,10 +143,10 @@ public class Main extends Application {
                 currentPlayerLabel,
                 bankLabel,
                 selectedFieldLabel,
-                infoLabel,
                 new Separator(),
-                addArmyBtn,
-                endTurnBtn
+                endTurnBtn,
+                new Separator(),
+                infoLabel
         );
 
         // ==================== MAP =====================
@@ -102,13 +165,19 @@ public class Main extends Application {
 
         for (Territory t : territories) {
             t.setOnTerritorySelectedListener(sel -> {
+                if (gameOver) return;
+
                 controller.selectTerritory(sel);
                 refreshLabels();
 
                 if (shouldOpenPlacePopup(sel)) {
                     showPlacePopup(stage, sel);
+                    refreshLabels();
+                    checkGameOver(stage);
                 } else if (shouldOpenAttackPopup(sel)) {
                     showAttackPopup(stage, sel);
+                    refreshLabels();
+                    checkGameOver(stage);
                 }
             });
         }
@@ -119,14 +188,67 @@ public class Main extends Application {
         Scene scene = new Scene(root, 1400, 900);
         stage.setTitle("Risiko");
         stage.setScene(scene);
-        stage.show();
 
+        gameOver = false;
         refreshLabels();
+        checkGameOver(stage);
+    }
+
+    private void checkGameOver(Stage stage) {
+        if (controller == null) return;
+        if (gameOver) return;
+        if (!controller.isGameOver()) return;
+
+        gameOver = true;
+
+        Player winner = controller.getWinner();
+        String reason = controller.getWinnerReason();
+
+        String winnerName;
+        if (winner == Player.RED) winnerName = redName;
+        else if (winner == Player.BLUE) winnerName = blueName;
+        else winnerName = "Unentschieden";
+
+        if (endTurnBtn != null) endTurnBtn.setDisable(true);
+
+        Stage dialog = new Stage();
+        dialog.initOwner(stage);
+        dialog.initModality(Modality.WINDOW_MODAL);
+        dialog.setTitle("Spiel beendet");
+
+        VBox box = new VBox(12);
+        box.setPadding(new Insets(16));
+
+        Label headline = new Label("Spiel beendet!");
+        headline.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+
+        Label winLabel = new Label("Gewinner: " + winnerName);
+        Label reasonLabel = new Label(reason == null ? "" : reason);
+        reasonLabel.setWrapText(true);
+
+        Button newGameBtn = new Button("Neues Spiel");
+        Button closeBtn = new Button("Schließen");
+
+        newGameBtn.setOnAction(e -> {
+            dialog.close();
+            // zurück zum Startscreen
+            showStartScreen(stage);
+        });
+
+        closeBtn.setOnAction(e -> dialog.close());
+
+        HBox buttons = new HBox(10, newGameBtn, closeBtn);
+
+        box.getChildren().addAll(headline, winLabel, reasonLabel, new Separator(), buttons);
+
+        dialog.setScene(new Scene(box, 420, 220));
+        dialog.showAndWait();
     }
 
     private void refreshLabels() {
         Player p = controller.getCurrentPlayer();
-        currentPlayerLabel.setText("Aktueller Spieler: " + p);
+        String playerName = (p == Player.RED) ? redName : blueName;
+        currentPlayerLabel.setText("Aktueller Spieler: " + playerName);
         currentPlayerLabel.setStyle(
                 "-fx-text-fill: " + (p == Player.RED ? "salmon" : "lightblue") + "; -fx-font-weight: bold;"
         );
