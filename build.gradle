@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'org.beryx.jlink' version '3.0.1'
 }
 
 repositories {
@@ -30,7 +31,6 @@ application {
 /*
  * WICHTIG:
  * Erzwingt korrekten Classpath für `gradle run`
- * (Fix für ClassNotFoundException trotz vorhandener Main.class)
  */
 tasks.named("run", JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
@@ -39,6 +39,7 @@ tasks.named("run", JavaExec) {
 
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.0'
 }
 
 test {
@@ -51,9 +52,36 @@ jar {
                 'Main-Class': 'com.risiko.Main'
         )
     }
-    tasks.register("printCp") {
+}
+
+tasks.register("printCp") {
     doLast {
         println(sourceSets.main.runtimeClasspath.asPath)
     }
 }
+
+/*
+ * Packaging (jpackage)
+ * - macOS: DMG
+ * - Windows: MSI oder EXE (je nachdem, was du in installerType setzt)
+ */
+jlink {
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+
+    launcher {
+        name = 'Risiko'
+    }
+
+    jpackage {
+        appVersion = '1.0.0'
+        vendor = 'Erik Meyer'
+        // macOS: 'dmg' oder 'pkg'
+        // Windows: 'msi' oder 'exe'
+        // installerType = 'dmg'   // <- auf macOS setzen
+        // installerType = 'msi'   // <- auf Windows setzen
+
+        // Icons optional:
+        // icon = file("packaging/icon.icns") // macOS
+        // icon = file("packaging/icon.ico")  // Windows
+    }
 }
