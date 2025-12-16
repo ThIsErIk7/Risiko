@@ -1,6 +1,8 @@
 package com.risiko;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.risiko.logic.GameController;
 import com.risiko.map.MapGenerator;
@@ -9,9 +11,12 @@ import com.risiko.model.Player;
 import com.risiko.view.Territory;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
@@ -27,6 +32,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -62,31 +68,30 @@ public class Main extends Application {
         Label title = new Label("RISIKO");
         title.setStyle("-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: white;");
 
+        Label redLabel = new Label("Spieler Rot");
+        redLabel.setStyle("-fx-text-fill: salmon; -fx-font-weight: bold;");
+
         TextField redField = new TextField("Rot");
+        redField.setPromptText("Name Spieler Rot");
         redField.setMaxWidth(240);
         redField.setStyle("-fx-font-size: 14px;");
 
+        Label blueLabel = new Label("Spieler Blau");
+        blueLabel.setStyle("-fx-text-fill: lightblue; -fx-font-weight: bold;");
+
         TextField blueField = new TextField("Blau");
+        blueField.setPromptText("Name Spieler Blau");
         blueField.setMaxWidth(240);
         blueField.setStyle("-fx-font-size: 14px;");
-
-        redField.setPromptText("Name Spieler Rot");
-        blueField.setPromptText("Name Spieler Blau");
 
         Button startBtn = new Button("Spiel starten");
         startBtn.setPrefWidth(240);
 
         startBtn.setOnAction(e -> {
-            String redName = redField.getText().isBlank() ? "Rot" : redField.getText();
-            String blueName = blueField.getText().isBlank() ? "Blau" : blueField.getText();
-            showGame(stage, redName, blueName);
+            String rn = redField.getText().isBlank() ? "Rot" : redField.getText();
+            String bn = blueField.getText().isBlank() ? "Blau" : blueField.getText();
+            showGame(stage, rn, bn);
         });
-
-        Label redLabel = new Label("Spieler Rot");
-        redLabel.setStyle("-fx-text-fill: salmon; -fx-font-weight: bold;");
-
-        Label blueLabel = new Label("Spieler Blau");
-        blueLabel.setStyle("-fx-text-fill: lightblue; -fx-font-weight: bold;");
 
         root.getChildren().addAll(
                 title,
@@ -118,7 +123,7 @@ public class Main extends Application {
                 new BackgroundFill(Color.web("#111"), CornerRadii.EMPTY, Insets.EMPTY)
         ));
 
-        Label title = new Label("RISIKO UI");
+        Label title = new Label("RISIKO");
         title.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;");
 
         currentPlayerLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
@@ -155,30 +160,80 @@ public class Main extends Application {
                 new BackgroundFill(Color.web("#dfe6ec"), CornerRadii.EMPTY, Insets.EMPTY)
         ));
 
-        StackPane mapWrapper = new StackPane(mapPane);
+        // Overlay-Layer für Brückenpfeile (klickt nicht dazwischen)
+        Pane bridgePane = new Pane();
+        bridgePane.setMouseTransparent(true);
+        bridgePane.setPickOnBounds(false);
+
+        StackPane mapWrapper = new StackPane(mapPane, bridgePane);
         mapWrapper.setAlignment(Pos.CENTER);
         mapWrapper.setPadding(new Insets(0)); // wichtig: kein Rand
 
         MapGenerator generator = new MapGenerator();
         List<Territory> territories = generator.generate(mapPane);
+
+        // Brückenpfeile zeichnen (nach Layout, damit Bounds stimmen)
+        bridgePane.prefWidthProperty().bind(mapPane.widthProperty());
+        bridgePane.prefHeightProperty().bind(mapPane.heightProperty());
+        Platform.runLater(() -> drawBridges(bridgePane, generator, territories));
         controller.setTerritories(territories);
 
         for (Territory t : territories) {
+
+            // LINKS: normaler Flow (select -> place/attack)
             t.setOnTerritorySelectedListener(sel -> {
                 if (gameOver) return;
 
                 controller.selectTerritory(sel);
                 refreshLabels();
 
-                if (shouldOpenPlacePopup(sel)) {
-                    showPlacePopup(stage, sel);
-                    refreshLabels();
-                    checkGameOver(stage);
-                } else if (shouldOpenAttackPopup(sel)) {
+                // Setup: nur platzieren
+                if (controller.isSetupPhase()) {
+                    if (sel.getOwner() == Player.NONE || sel.getOwner() == controller.getCurrentPlayer()) {
+                        showPlacePopup(stage, sel);
+                        refreshLabels();
+                        checkGameOver(stage);
+                    } else {
+                        infoLabel.setText("In der Startphase kannst du nur auf leeren oder eigenen Feldern platzieren.");
+                    }
+                    return;
+                }
+
+                // Normalphase: Gegnerfeld -> Angriff-Popup
+                if (sel.getOwner() != Player.NONE && sel.getOwner() != controller.getCurrentPlayer()) {
                     showAttackPopup(stage, sel);
                     refreshLabels();
                     checkGameOver(stage);
+                    return;
                 }
+
+                // Normalphase: eigenes oder leeres Feld -> Platzieren-Popup
+                if (sel.getOwner() == Player.NONE || sel.getOwner() == controller.getCurrentPlayer()) {
+                    showPlacePopup(stage, sel);
+                    refreshLabels();
+                    checkGameOver(stage);
+                }
+            });
+
+            // RECHTS: Move-Popup (ZIEL-basiert)
+            // Rechtsklick auf das Ziel-Feld -> wähle Quelle aus benachbarten eigenen Feldern
+            t.setOnTerritoryRightClickListener(target -> {
+                if (gameOver) return;
+                if (controller.isSetupPhase()) {
+                    infoLabel.setText("Verschieben ist erst nach der Startphase möglich.");
+                    return;
+                }
+
+                Player me = controller.getCurrentPlayer();
+
+                if (target.getOwner() != me) {
+                    infoLabel.setText("Du kannst nur in eigene Felder verschieben.");
+                    return;
+                }
+
+                showMovePopup(stage, target);
+                refreshLabels();
+                checkGameOver(stage);
             });
         }
 
@@ -231,7 +286,6 @@ public class Main extends Application {
 
         newGameBtn.setOnAction(e -> {
             dialog.close();
-            // zurück zum Startscreen
             showStartScreen(stage);
         });
 
@@ -274,22 +328,6 @@ public class Main extends Application {
     }
 
     // ===== Platzieren Popup =====
-    private boolean shouldOpenPlacePopup(Territory clicked) {
-        if (clicked == null) return false;
-
-        Player me = controller.getCurrentPlayer();
-
-        // In der Startphase darfst du auch auf bereits eigene Felder weiter platzieren.
-        if (controller.isSetupPhase()) {
-            if (controller.getSetupRemaining(me) <= 0) return false;
-            return clicked.getOwner() == Player.NONE || clicked.getOwner() == me;
-        }
-
-        // Normalphase: platzieren auf eigenen Feldern ODER leeren Feldern (wenn Bank > 0)
-        if (controller.getBank(me) <= 0) return false;
-        return clicked.getOwner() == Player.NONE || clicked.getOwner() == me;
-    }
-
     private void showPlacePopup(Stage ownerStage, Territory target) {
         Stage dialog = new Stage();
         dialog.initOwner(ownerStage);
@@ -305,13 +343,16 @@ public class Main extends Application {
         String header = (target.getOwner() == Player.NONE) ? "Leeres Feld: " : "Eigenes Feld: ";
         Label t1 = new Label(header + target.getName());
 
-        int max;
         if (controller.isSetupPhase()) {
             int remaining = controller.getSetupRemaining(me);
-            max = Math.max(1, Math.min(bank, remaining));
+            int max = Math.min(bank, remaining);
+            if (max <= 0) {
+                infoLabel.setText("Keine Truppen verfügbar zum Platzieren.");
+                dialog.close();
+                return;
+            }
+
             Label t2 = new Label("Startphase – übrig: " + remaining + " (Bank: " + bank + ")");
-            // Spinner muss nach t2 erstellt werden, also fügen wir t2 später hinzu.
-            // (Wir ersetzen unten die addAll-Reihenfolge.)
 
             Spinner<Integer> amount = new Spinner<>(1, max, 1);
             amount.setEditable(true);
@@ -345,11 +386,15 @@ public class Main extends Application {
             return;
         }
 
-        // Normalphase
-        max = Math.max(1, bank);
+        if (bank <= 0) {
+            infoLabel.setText("Keine Truppen mehr in der Bank.");
+            dialog.close();
+            return;
+        }
+
         Label t2 = new Label("Verfügbar in Bank: " + bank);
 
-        Spinner<Integer> amount = new Spinner<>(1, max, 1);
+        Spinner<Integer> amount = new Spinner<>(1, bank, 1);
         amount.setEditable(true);
 
         Button ok = new Button("Platzieren");
@@ -373,21 +418,15 @@ public class Main extends Application {
     }
 
     // ===== Angriff Popup =====
-    private boolean shouldOpenAttackPopup(Territory clicked) {
-        if (controller.isSetupPhase()) return false;
-        if (clicked == null) return false;
-        Player me = controller.getCurrentPlayer();
-
-        if (clicked.getOwner() == Player.NONE) return false;
-        if (clicked.getOwner() == me) return false;
-
-        return !controller.getAttackersFor(clicked).isEmpty();
-    }
-
     private void showAttackPopup(Stage ownerStage, Territory defender) {
         controller.highlightAttackersFor(defender);
 
         List<Territory> attackers = controller.getAttackersFor(defender);
+        if (attackers == null || attackers.isEmpty()) {
+            infoLabel.setText("Kein Angriff möglich: Kein benachbartes eigenes Feld mit mindestens 2 Armeen.");
+            controller.clearHighlights();
+            return;
+        }
 
         Stage dialog = new Stage();
         dialog.initOwner(ownerStage);
@@ -455,6 +494,207 @@ public class Main extends Application {
         dialog.showAndWait();
 
         controller.clearHighlights();
+    }
+
+    // ===== Verschieben Popup (Rechtsklick) =====
+    // Rechtsklick auf ZIEL -> Quelle aus Nachbarn wählen -> X Truppen in das Ziel verschieben
+    private void showMovePopup(Stage ownerStage, Territory target) {
+        Player me = controller.getCurrentPlayer();
+
+        // Quellen = benachbarte eigene Felder mit mind. 2 Armeen (weil 1 bleiben muss)
+        List<Territory> sources = target.getNeighbors().stream()
+                .filter(t -> t != null && t.getOwner() == me && t.getArmyCount() >= 2)
+                .toList();
+
+        if (sources.isEmpty()) {
+            infoLabel.setText("Keine benachbarten eigenen Felder mit mindestens 2 Armeen gefunden.");
+            return;
+        }
+
+        Stage dialog = new Stage();
+        dialog.initOwner(ownerStage);
+        dialog.initModality(Modality.WINDOW_MODAL);
+        dialog.setTitle("Truppen verschieben");
+
+        VBox box = new VBox(10);
+        box.setPadding(new Insets(14));
+
+        Label head = new Label("Ziel: " + target.getName() + " (Armeen: " + target.getArmyCount() + ")");
+
+        ChoiceBox<Territory> sourceChoice = new ChoiceBox<>();
+        sourceChoice.getItems().addAll(sources);
+        sourceChoice.getSelectionModel().selectFirst();
+        sourceChoice.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(Territory t) {
+                if (t == null) return "";
+                return t.getName() + " (Armeen: " + t.getArmyCount() + ")";
+            }
+            @Override public Territory fromString(String s) { return null; }
+        });
+
+        Territory initialSource = sourceChoice.getValue();
+        int initialMax = (initialSource == null) ? 1 : Math.max(1, initialSource.getArmyCount() - 1);
+        Spinner<Integer> amount = new Spinner<>(1, initialMax, 1);
+        amount.setEditable(true);
+
+        Runnable updateMax = () -> {
+            Territory src = sourceChoice.getValue();
+            int maxMove = (src == null) ? 1 : Math.max(1, src.getArmyCount() - 1);
+            int cur = amount.getValue();
+            amount.setValueFactory(new javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory(
+                    1, maxMove, Math.min(cur, maxMove)
+            ));
+        };
+
+        sourceChoice.getSelectionModel().selectedItemProperty().addListener((obs, o, n) -> updateMax.run());
+
+        Button ok = new Button("Verschieben");
+        Button cancel = new Button("Abbrechen");
+
+        ok.setOnAction(e -> {
+            Territory source = sourceChoice.getValue();
+            if (source == null) {
+                infoLabel.setText("Keine Quelle ausgewählt.");
+                dialog.close();
+                return;
+            }
+
+            int val = amount.getValue();
+            int canMove = source.getArmyCount() - 1;
+            if (val < 1 || val > canMove) {
+                Alert a = new Alert(AlertType.WARNING,
+                        "Ungültige Anzahl. Es muss mindestens 1 Armee im Startfeld bleiben.");
+                a.initOwner(dialog);
+                a.showAndWait();
+                return;
+            }
+
+            if (source.getOwner() != me || target.getOwner() != me || !source.isNeighborOf(target)) {
+                infoLabel.setText("Verschieben nur von benachbarten eigenen Feldern ins Ziel.");
+                dialog.close();
+                return;
+            }
+
+            source.setArmyCount(source.getArmyCount() - val);
+            target.setArmyCount(target.getArmyCount() + val);
+
+            infoLabel.setText("Verschoben: " + val + " von " + source.getName() + " nach " + target.getName());
+            dialog.close();
+        });
+
+        cancel.setOnAction(e -> dialog.close());
+
+        HBox buttons = new HBox(10, ok, cancel);
+
+        box.getChildren().addAll(
+                head,
+                new Label("Quelle (benachbart, eigene Felder, mind. 2 Armeen):"),
+                sourceChoice,
+                new Label("Wie viele Truppen? (1 muss in der Quelle bleiben)"),
+                amount,
+                new Separator(),
+                buttons
+        );
+
+        dialog.setScene(new Scene(box, 440, 270));
+        dialog.showAndWait();
+    }
+
+    // ===== Brückenpfeile (Insel-übergreifende Nachbarschaften) =====
+    private void drawBridges(Pane bridgePane, MapGenerator generator, List<Territory> territories) {
+        if (bridgePane == null || generator == null || territories == null) return;
+
+        Map<String, Territory> byName = new HashMap<>();
+        for (Territory t : territories) {
+            if (t != null && t.getName() != null) byName.put(t.getName(), t);
+        }
+
+        List<?> bridges = null;
+        try {
+            Object result = generator.getClass().getMethod("getBridges").invoke(generator);
+            if (result instanceof List<?>) bridges = (List<?>) result;
+        } catch (Throwable ignored) {
+            bridges = null;
+        }
+
+        if (bridges == null || bridges.isEmpty()) {
+            String[][] fallback = new String[][]{
+                    {"C", "H"},
+                    {"E", "H"},
+                    {"N", "I"}
+            };
+            bridgePane.getChildren().clear();
+            for (String[] p : fallback) {
+                Territory a = byName.get(p[0]);
+                Territory b = byName.get(p[1]);
+                if (a == null || b == null) continue;
+                addArrowBetween(bridgePane, a, b);
+            }
+            return;
+        }
+
+        bridgePane.getChildren().clear();
+
+        for (Object b : bridges) {
+            try {
+                String from = (String) b.getClass().getMethod("from").invoke(b);
+                String to = (String) b.getClass().getMethod("to").invoke(b);
+
+                Territory a = byName.get(from);
+                Territory c = byName.get(to);
+                if (a == null || c == null) continue;
+
+                addArrowBetween(bridgePane, a, c);
+
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    private void addArrowBetween(Pane pane, Territory a, Territory b) {
+        if (pane == null || a == null || b == null) return;
+
+        var ba = a.getArea().getBoundsInParent();
+        var bb = b.getArea().getBoundsInParent();
+
+        double cx1 = ba.getCenterX();
+        double cy1 = ba.getCenterY();
+        double cx2 = bb.getCenterX();
+        double cy2 = bb.getCenterY();
+
+        double dx = cx2 - cx1;
+        double dy = cy2 - cy1;
+        double len = Math.hypot(dx, dy);
+        if (len < 0.0001) return;
+
+        double ux = dx / len;
+        double uy = dy / len;
+
+        double ra = Math.max(ba.getWidth(), ba.getHeight()) / 2.0;
+        double rb = Math.max(bb.getWidth(), bb.getHeight()) / 2.0;
+
+        double pad = 26;
+
+        double x1 = cx1 + ux * (ra + pad);
+        double y1 = cy1 + uy * (ra + pad);
+        double x2 = cx2 - ux * (rb + pad);
+        double y2 = cy2 - uy * (rb + pad);
+
+        addArrow(pane, x1, y1, x2, y2);
+    }
+
+    private void addArrow(Pane pane, double x1, double y1, double x2, double y2) {
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        double len = Math.hypot(dx, dy);
+        if (len < 0.0001) return;
+
+        Line line = new Line(x1, y1, x2, y2);
+        line.setStroke(Color.color(0, 0, 0, 0.45));
+        line.setStrokeWidth(4);
+        line.getStrokeDashArray().addAll(10.0, 10.0);
+
+        pane.getChildren().add(line);
     }
 
     public static void main(String[] args) {

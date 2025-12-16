@@ -10,7 +10,7 @@ import com.risiko.view.Territory;
 
 public class GameController {
 
-    // ===== Balance =====
+    // Balance
     public static final int START_TROOPS_TO_PLACE = 18;
     public static final int BASE_INCOME = 4;
 
@@ -19,35 +19,29 @@ public class GameController {
     private List<Territory> territories = new ArrayList<>();
     private Territory selectedTerritory;
 
-    // Placement tracking
+    // Platzierte Truppen im aktuellen Zug
     private int placedThisTurn = 0;
 
-    // ===== Start-Phase =====
+    // Start Phase
     private boolean setupPhase = true;
     private int setupRemainingRed = START_TROOPS_TO_PLACE;
     private int setupRemainingBlue = START_TROOPS_TO_PLACE;
 
-    // ===== Rounds / Bonus unlock =====
-    // Eine "Runde" = beide Spieler haben je einmal gezogen.
-    // Wir zählen eine Runde immer dann hoch, wenn nach `endTurn()` wieder RED dran ist.
+    // Runden-Zähler ( nur für Sparsystem )
     private int roundsPlayed = 0;
 
-    // ===== Game Over =====
+    // Verloren 
     private Player winner = Player.NONE;
     private String winnerReason = "";
 
     public GameController(GameState state) {
         this.state = state;
 
-        // Während Setup: Bank = exakt verbleibende Starttruppen
         state.setBank(Player.RED, START_TROOPS_TO_PLACE);
         state.setBank(Player.BLUE, START_TROOPS_TO_PLACE);
-
-        // WICHTIG: KEIN Einkommen am Anfang!
-        // grantIncomeFor(...) passiert erst, wenn Setup vorbei ist.
     }
 
-    // ===================== Territories / Auswahl =====================
+    // Territories / Auswahl
 
     public void setTerritories(List<Territory> territories) {
         this.territories = (territories == null) ? new ArrayList<>() : territories;
@@ -298,22 +292,23 @@ public class GameController {
 
             updateWinnerIfNeeded();
 
-            // Wenn auch der zweite Spieler fertig ist -> Setup endet, Income starten
+            // Wenn auch der zweite Spieler fertig ist -> Setup endet
             if (setupRemainingRed == 0 && setupRemainingBlue == 0) {
                 setupPhase = false;
                 roundsPlayed = 0;
 
-                // Wichtig: KEIN sofortiges Einkommen beim Ende der Startphase,
-                // sonst hat der Startspieler effektiv +4 extra.
-                // Einkommen gibt es erst beim nächsten regulären Rundenwechsel.
                 state.setSaveStreak(Player.RED, 0);
                 state.setSaveStreak(Player.BLUE, 0);
 
+                // FIX: Der Spieler, der nach dem Setup dran ist,
+                // bekommt SOFORT sein reguläres Einkommen (+4)
+                grantIncomeFor(state.getCurrentPlayer());
+
                 updateWinnerIfNeeded();
 
-                return "Startphase abgeschlossen! Neuer Spieler: " + state.getCurrentPlayer()
-                        + " | Bank: " + state.getBank(state.getCurrentPlayer())
-                        + " (Einkommen kommt erst nach dem nächsten Zugende)";
+                return "Startphase abgeschlossen! Neuer Spieler: "
+                        + state.getCurrentPlayer()
+                        + " | Bank: " + state.getBank(state.getCurrentPlayer());
             }
 
             return "Startphase: Spielerwechsel. Neuer Spieler: " + state.getCurrentPlayer()

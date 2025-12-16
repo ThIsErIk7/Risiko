@@ -3,26 +3,20 @@ package com.risiko.logic;
 import java.util.Arrays;
 import java.util.Random;
 
-/**
- * Reines Risiko-Kampfsystem (ohne JavaFX, nur Logik).
- */
+
 public final class BattleSystem {
 
     private static final Random RANDOM = new Random();
 
-    private BattleSystem() {
-        // Utility-Klasse, kein Konstruktor nach außen
-    }
+    
 
-    /** Würfelt einen sechsseitigen Würfel (1–6). */
+    // Würfelt einen sechsseitigen Würfel (1–6). 
     public static int rollDice() {
         return RANDOM.nextInt(6) + 1;
     }
 
-    /**
-     * Detaillierte Kampfsimulation:
-     * Führt einen kompletten Kampf durch und gibt Rest-Armeen zurück.
-     */
+    //Führt einen kompletten Kampf durch und gibt Rest-Armeen zurück.
+     
     public static BattleResult simulateBattleDetailed(int attackerStart, int defenderStart) {
         int attacker = attackerStart;
         int defender = defenderStart;
@@ -86,16 +80,14 @@ public final class BattleSystem {
         return new BattleResult(attacker, defender);
     }
 
-    /** TRUE, wenn Angreifer alle Verteidiger besiegt. */
+   // ist True, wenn Angreifer gewinnt
     public static boolean simulateBattle(int attacker, int defender) {
         BattleResult result = simulateBattleDetailed(attacker, defender);
         return result.defenderRemaining == 0;
     }
 
-    /**
-     * Simuliert viele Kämpfe und berechnet die Gewinnwahrscheinlichkeit
-     * des Angreifers in Prozent.
-     */
+    //Simuliert Kämpfe und berechnet die Gewinnwahrscheinlichkeit
+     
     public static double calculateWinProbability(int attacker, int defender) {
         if (attacker <= 1) return 0.0;
         if (defender == 0) return 100.0;
@@ -112,7 +104,7 @@ public final class BattleSystem {
         return (double) wins / simulations * 100.0;
     }
 
-    /** Ergebnis eines Kampfes. */
+    // Ergebnis eines Kampfes. 
     public static class BattleResult {
         public final int attackerRemaining;
         public final int defenderRemaining;

@@ -1,5 +1,6 @@
 package com.risiko.view;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -11,6 +12,7 @@ import javafx.geometry.Bounds;
 import javafx.scene.Group;
 import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.input.MouseButton;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Shape;
 
@@ -29,11 +31,10 @@ public class Territory extends Group {
     private double badgeOffsetY = 0;
 
     private final Set<Territory> neighbors = new HashSet<>();
-
     private boolean highlighted = false;
-    private boolean hovered = false;
 
     private Consumer<Territory> onSelected;
+    private Consumer<Territory> onRightClick;
 
     public Territory(String name, Shape area, Player owner, int armyCount, double badgeX, double badgeY) {
         this.name = name;
@@ -43,7 +44,6 @@ public class Territory extends Group {
         this.badgeX = badgeX;
         this.badgeY = badgeY;
 
-        // Grund-Stroke (Grenze)
         area.setStroke(Color.color(0, 0, 0, 0.65));
         area.setStrokeWidth(2.0);
 
@@ -59,24 +59,30 @@ public class Territory extends Group {
 
         updateFill();
         updateHighlight();
-        updateHover();
 
         getChildren().addAll(area, armyLabel);
 
-        // Badge-Position nach Layout
         Platform.runLater(this::repositionBadge);
 
-        // Hover
-        area.setOnMouseEntered(e -> setHovered(true));
-        area.setOnMouseExited(e -> setHovered(false));
-
-        // Klick
-        area.setOnMouseClicked(e -> {
-            if (onSelected != null) onSelected.accept(this);
+        // WICHTIG: Links = normaler Select, Rechts = Move-Action
+        setOnMouseClicked(e -> {
+            if (e.getButton() == MouseButton.PRIMARY) {
+                if (onSelected != null) onSelected.accept(this);
+            } else if (e.getButton() == MouseButton.SECONDARY) {
+                if (onRightClick != null) onRightClick.accept(this);
+            }
         });
     }
 
-    // ===== Badge =====
+    public void setOnTerritorySelectedListener(Consumer<Territory> listener) {
+        this.onSelected = listener;
+    }
+
+    public void setOnTerritoryRightClickListener(Consumer<Territory> listener) {
+        this.onRightClick = listener;
+    }
+
+    // ===== Badge Positioning =====
     public void setBadgeOffset(double dx, double dy) {
         this.badgeOffsetX = dx;
         this.badgeOffsetY = dy;
@@ -98,8 +104,6 @@ public class Territory extends Group {
 
         armyLabel.setLayoutX(x);
         armyLabel.setLayoutY(y);
-
-        // Badge immer ganz vorne
         armyLabel.toFront();
     }
 
@@ -111,6 +115,10 @@ public class Territory extends Group {
 
     public boolean isNeighborOf(Territory other) {
         return other != null && neighbors.contains(other);
+    }
+
+    public Set<Territory> getNeighbors() {
+        return Collections.unmodifiableSet(neighbors);
     }
 
     // ===== Highlight =====
@@ -127,33 +135,11 @@ public class Territory extends Group {
         setEffect(highlighted ? new DropShadow(20, Color.GOLD) : null);
     }
 
-    // ===== Hover =====
-    public void setHovered(boolean hovered) {
-        this.hovered = hovered;
-        updateHover();
-    }
-
-    private void updateHover() {
-        // Nur Stroke ändern, damit nicht "Grenzen kämpfen"
-        if (hovered) {
-            area.setStroke(Color.BLACK);
-            area.setStrokeWidth(3.2);
-        } else {
-            area.setStroke(Color.color(0, 0, 0, 0.65));
-            area.setStrokeWidth(2.0);
-        }
-        armyLabel.toFront();
-    }
-
     // ===== Ownership / UI =====
     private void updateFill() {
         if (owner == Player.BLUE) area.setFill(Color.LIGHTBLUE);
         else if (owner == Player.RED) area.setFill(Color.SALMON);
         else area.setFill(Color.LIGHTGRAY);
-    }
-
-    public void setOnTerritorySelectedListener(Consumer<Territory> listener) {
-        this.onSelected = listener;
     }
 
     public Player getOwner() { return owner; }
@@ -168,9 +154,4 @@ public class Territory extends Group {
 
     public String getName() { return name; }
     public Shape getArea() { return area; }
-
-    @Override
-    public String toString() {
-        return name;
-    }
 }
