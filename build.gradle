@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'org.beryx.jlink' version '3.0.1'
 }
 
 repositories {
@@ -16,22 +17,14 @@ java {
 
 javafx {
     version = "21"
-    modules = [
-            'javafx.controls',
-            'javafx.fxml',
-            'javafx.graphics'
-    ]
+    modules = ['javafx.controls', 'javafx.fxml', 'javafx.graphics']
 }
 
 application {
     mainClass = "com.risiko.Main"
 }
 
-/*
- * WICHTIG:
- * Erzwingt korrekten Classpath für `gradle run`
- * (Fix für ClassNotFoundException trotz vorhandener Main.class)
- */
+/* Fix für gradle run Classpath */
 tasks.named("run", JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass.set(application.mainClass)
@@ -39,6 +32,7 @@ tasks.named("run", JavaExec) {
 
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.0'
 }
 
 test {
@@ -47,13 +41,54 @@ test {
 
 jar {
     manifest {
-        attributes(
-                'Main-Class': 'com.risiko.Main'
-        )
-    }
-    tasks.register("printCp") {
-    doLast {
-        println(sourceSets.main.runtimeClasspath.asPath)
+        attributes('Main-Class': 'com.risiko.Main')
     }
 }
+
+tasks.register("printCp") {
+    doLast { println(sourceSets.main.runtimeClasspath.asPath) }
+}
+
+def desktopDir = file("${System.getProperty('user.home')}/Desktop")
+
+// installerType automatisch nach OS (mac -> dmg, windows -> exe)
+// oder überschreibbar per: -PinstallerType=dmg / -PinstallerType=exe
+def osName = System.getProperty("os.name").toLowerCase()
+def defaultInstaller = osName.contains("mac") ? "dmg" : (osName.contains("win") ? "exe" : "app-image")
+def installerTypeProp = (findProperty("installerType") ?: defaultInstaller).toString()
+
+jlink {
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+
+    launcher {
+        name = 'Risiko'
+    }
+
+    jpackage {
+        appVersion = '1.0.0'
+        vendor = 'Erik Meyer'
+        installerType = installerTypeProp
+
+        // Optional Icons:
+        // icon = file("packaging/icon.icns") // macOS
+        // icon = file("packaging/icon.ico")  // Windows
+    }
+}
+
+/*
+ * Kopiert nach dem Packaging den Installer auf den Desktop.
+ * - macOS: *.dmg
+ * - Windows: *.exe
+ */
+tasks.register("copyInstallerToDesktop", Copy) {
+    dependsOn tasks.named("jpackage")
+
+    from(layout.buildDirectory.dir("jpackage"))
+    into(desktopDir)
+
+    include("*.dmg", "*.exe", "*.msi", "*.pkg")
+
+    doLast {
+        println("Installer auf Desktop kopiert: ${desktopDir}")
+    }
 }
