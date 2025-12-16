@@ -5,6 +5,9 @@ plugins {
     id 'org.beryx.jlink' version '3.0.1'
 }
 
+group = 'com.risiko'
+version = '1.0.0'
+
 repositories {
     mavenCentral()
 }
@@ -17,46 +20,28 @@ java {
 
 javafx {
     version = "21"
-    modules = ['javafx.controls', 'javafx.fxml', 'javafx.graphics']
+    modules = [
+            'javafx.controls',
+            'javafx.fxml',
+            'javafx.graphics'
+    ]
 }
 
 application {
     mainClass = "com.risiko.Main"
 }
 
-/* Fix für gradle run Classpath */
-tasks.named("run", JavaExec) {
-    classpath = sourceSets.main.runtimeClasspath
-    mainClass.set(application.mainClass)
-}
-
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.0'
 }
 
 test {
     useJUnitPlatform()
 }
 
-jar {
-    manifest {
-        attributes('Main-Class': 'com.risiko.Main')
-    }
-}
-
-tasks.register("printCp") {
-    doLast { println(sourceSets.main.runtimeClasspath.asPath) }
-}
-
-def desktopDir = file("${System.getProperty('user.home')}/Desktop")
-
-// installerType automatisch nach OS (mac -> dmg, windows -> exe)
-// oder überschreibbar per: -PinstallerType=dmg / -PinstallerType=exe
-def osName = System.getProperty("os.name").toLowerCase()
-def defaultInstaller = osName.contains("mac") ? "dmg" : (osName.contains("win") ? "exe" : "app-image")
-def installerTypeProp = (findProperty("installerType") ?: defaultInstaller).toString()
-
+/**
+ * jlink + jpackage (DMG/EXE)
+ */
 jlink {
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
 
@@ -65,30 +50,48 @@ jlink {
     }
 
     jpackage {
-        appVersion = '1.0.0'
-        vendor = 'Erik Meyer'
-        installerType = installerTypeProp
+        // macOS: dmg, Windows: exe (per -PinstallerType=...)
+        installerType = (project.findProperty('installerType') ?: 'dmg').toString()
 
-        // Optional Icons:
-        // icon = file("packaging/icon.icns") // macOS
-        // icon = file("packaging/icon.ico")  // Windows
+        // Wo Gradle den Installer ablegt
+        destinationDir = file("$buildDir/installer")
+
+        appVersion = project.version.toString()
+
+        // Optional (kannst du später ergänzen):
+        // icon = file("src/main/resources/icon.icns")   // macOS
+        // icon = file("src/main/resources/icon.ico")    // Windows
     }
 }
 
-/*
- * Kopiert nach dem Packaging den Installer auf den Desktop.
- * - macOS: *.dmg
- * - Windows: *.exe
+/**
+ * Kopiert den fertigen Installer auf den Desktop
  */
-tasks.register("copyInstallerToDesktop", Copy) {
+tasks.register("copyInstallerToDesktop") {
     dependsOn tasks.named("jpackage")
 
-    from(layout.buildDirectory.dir("jpackage"))
-    into(desktopDir)
-
-    include("*.dmg", "*.exe", "*.msi", "*.pkg")
-
     doLast {
-        println("Installer auf Desktop kopiert: ${desktopDir}")
+        def desktop = file("${System.getProperty('user.home')}/Desktop")
+        def installerDir = file("$buildDir/installer")
+
+        if (!installerDir.exists()) {
+            throw new GradleException("Installer-Ordner nicht gefunden: " + installerDir)
+        }
+
+        // Suche nach dmg/exe/msi/pkg je nach OS/installerType
+        def files = installerDir.listFiles()
+        if (files == null || files.length == 0) {
+            throw new GradleException("Keine Installer-Datei gefunden in: " + installerDir)
+        }
+
+        // Nimm die größte Datei (typisch der Installer)
+        def installer = files.toList().sort { a, b -> b.length() <=> a.length() }.first()
+
+        copy {
+            from installer
+            into desktop
+        }
+
+        println "✅ Installer kopiert nach Desktop: ${new File(desktop, installer.name).absolutePath}"
     }
 }
